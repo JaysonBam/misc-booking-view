@@ -5,7 +5,7 @@ export function LoadingScreen() {
     return (
         <div className={STYLES.loading}>
             <Loader2 className="w-12 h-12 animate-spin mb-4 text-emerald-600" />
-            <h2 className="text-xl font-medium text-slate-700">Loading Dashboard...</h2>
+            <h2 className="text-xl font-medium text-slate-700">Loading availability...</h2>
         </div>
     );
 }

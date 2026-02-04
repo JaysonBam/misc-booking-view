@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { STYLES } from './styles';
-import { DoorOpen, DoorClosed, Presentation, Clock } from 'lucide-react';
+import { DoorOpen, DoorClosed, Presentation, Clock, Instagram } from 'lucide-react';
 import type { AvailabilityData, GridSlot } from './types';
 import { formatTime } from './utils';
 
@@ -11,7 +11,7 @@ import { MobileNav } from './components/MobileNav';
 import { RoomCard } from './components/RoomCard';
 import { QRCodeCard } from './components/QRCodeCard';
 import { HelpWidget } from './components/HelpWidget';
-import { LoadingScreen, ErrorScreen } from './components/StatusScreens';
+import { LoadingScreen, ErrorScreen, AfterHoursScreen } from './components/StatusScreens';
 
 function App() {
   const [data, setData] = useState<AvailabilityData | null>(null);
@@ -19,6 +19,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLiveMode, setIsLiveMode] = useState(false);
+  const [isAfterHours, setIsAfterHours] = useState(false);
+  const [operationHours, setOperationHours] = useState('');
   
   // Navigation State
   const [currentSlotIndex, setCurrentSlotIndex] = useState<number>(-1);
@@ -42,20 +44,21 @@ function App() {
         const now = formatTime(new Date());
         let index = responseData.grid.findIndex((slot: GridSlot) => now >= slot.start && now < slot.end);
 
-        // If not currently in a slot, check boundaries
-        if (index === -1) {
-          const lastEnd = responseData.grid[responseData.grid.length - 1].end;
-          
-          if (now >= lastEnd) {
-             // If after the final slot, default to final slot
-             index = responseData.grid.length - 1;
-          } else {
-             // Otherwise (before first slot, or generic fallback), default to first slot
-             index = 0;
-          }
-        }
+        const firstStart = responseData.grid[0].start;
+        const lastEnd = responseData.grid[responseData.grid.length - 1].end;
+        setOperationHours(`${firstStart} - ${lastEnd}`);
 
-        setCurrentSlotIndex(index);
+        if (now < firstStart || now >= lastEnd) {
+           setIsAfterHours(true);
+        } else {
+           setIsAfterHours(false);
+           // If we are in operation hours but not in a specific slot (gap), find next slot
+           if (index === -1) {
+             const nextSlotIndex = responseData.grid.findIndex((slot: GridSlot) => slot.start > now);
+             index = nextSlotIndex !== -1 ? nextSlotIndex : 0;
+           }
+           setCurrentSlotIndex(index);
+        }
       }
 
     } catch (err: any) {
@@ -124,6 +127,10 @@ function App() {
 
   if (error) {
     return <ErrorScreen error={error} onRetry={fetchData} />;
+  }
+
+  if (isAfterHours) {
+    return <AfterHoursScreen hours={operationHours} />;
   }
 
   return (
@@ -203,6 +210,18 @@ function App() {
       {/* Floating Help Button & Modal */}
       <HelpWidget />
       
+      {/* Footer Info Link - Hidden in Live/TV Mode */}
+      <div className="w-full flex justify-center py-6 pb-24 lg:hidden z-10">
+         <a 
+           href={import.meta.env.VITE_INSTAGRAM_URL}
+           target="_blank"
+           rel="noreferrer"
+           className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm border border-slate-200 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all hover:scale-105 active:scale-95"
+         >
+           <Instagram className="w-3.5 h-3.5" />
+           <span>Find latest operational info on Instagram</span>
+         </a>
+       </div>
     </div>
   );
 }

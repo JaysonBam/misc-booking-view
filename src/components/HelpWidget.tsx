@@ -9,7 +9,7 @@ export function HelpWidget() {
     return (
         <>
             {/* Floating Help Button (Mobile Only) */}
-            <div className={STYLES.help.fab}>
+            <div className={STYLES.help.fab} style={{ bottom: '90px' }}>
                 <button
                     onClick={() => setIsOpen(true)}
                     className={STYLES.help.fabButton}

@@ -20,7 +20,20 @@ export interface Totals {
   'boardroom': number;
 }
 
+export interface OperationHours {
+  start: string;
+  end: string;
+}
+
+export interface SaturdayHours {
+  start: string;
+  end: string;
+  enabled: boolean;
+}
+
 export interface AvailabilityData {
   totals: Totals;
   grid: GridSlot[];
+  operation_hours: OperationHours;
+  saturday_hours: SaturdayHours;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase';
 import { STYLES } from './styles';
-import { DoorOpen, DoorClosed, Presentation, Clock, Instagram } from 'lucide-react';
+import { DoorOpen, DoorClosed, Presentation, Clock } from 'lucide-react';
 import type { AvailabilityData, GridSlot } from './types';
 import { formatTime } from './utils';
 
@@ -11,6 +11,7 @@ import { MobileNav } from './components/MobileNav';
 import { RoomCard } from './components/RoomCard';
 import { QRCodeCard } from './components/QRCodeCard';
 import { HelpWidget } from './components/HelpWidget';
+import { OperationalInfoWidget } from './components/OperationalInfoWidget';
 import { LoadingScreen, ErrorScreen, AfterHoursScreen } from './components/StatusScreens';
 
 function App() {
@@ -20,7 +21,6 @@ function App() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isLiveMode, setIsLiveMode] = useState(false);
   const [isAfterHours, setIsAfterHours] = useState(false);
-  const [operationHours, setOperationHours] = useState('');
   
   // Navigation State
   const [currentSlotIndex, setCurrentSlotIndex] = useState<number>(-1);
@@ -39,26 +39,48 @@ function App() {
       setData(responseData);
       setLastUpdated(new Date());
 
-      // On initial load, find the current time slot
-      if (responseData?.grid && responseData.grid.length > 0) {
-        const now = formatTime(new Date());
-        let index = responseData.grid.findIndex((slot: GridSlot) => now >= slot.start && now < slot.end);
+      const currentDate = new Date();
+      const nowTime = formatTime(currentDate);
+      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, ..., 6 = Saturday
+      
+      let isOpen = false;
 
-        const firstStart = responseData.grid[0].start;
-        const lastEnd = responseData.grid[responseData.grid.length - 1].end;
-        setOperationHours(`${firstStart} - ${lastEnd}`);
+      // 1. Sunday: Always Closed
+      if (dayOfWeek === 0) {
+          isOpen = false;
+      } 
+      // 2. Saturday: Check config
+      else if (dayOfWeek === 6) {
+          if (responseData.saturday_hours?.enabled) {
+            const { start, end } = responseData.saturday_hours;
+            isOpen = nowTime >= start && nowTime < end;
+          } else {
+            isOpen = false;
+          }
+      } 
+      // 3. Weekdays: Check Operation Hours
+      else {
+          // Default to grid bounds if operation_hours missing
+          const start = responseData.operation_hours?.start || responseData.grid?.[0]?.start || "00:00";
+          const end = responseData.operation_hours?.end || responseData.grid?.[responseData.grid.length - 1]?.end || "23:59";
+          isOpen = nowTime >= start && nowTime < end;
+      }
 
-        if (now < firstStart || now >= lastEnd) {
-           setIsAfterHours(true);
-        } else {
-           setIsAfterHours(false);
-           // If we are in operation hours but not in a specific slot (gap), find next slot
-           if (index === -1) {
-             const nextSlotIndex = responseData.grid.findIndex((slot: GridSlot) => slot.start > now);
-             index = nextSlotIndex !== -1 ? nextSlotIndex : 0;
-           }
-           setCurrentSlotIndex(index);
-        }
+      if (!isOpen) {
+          setIsAfterHours(true);
+      } else {
+          setIsAfterHours(false);
+          
+          if (responseData?.grid && responseData.grid.length > 0) {
+            // Find current or next slot
+            let index = responseData.grid.findIndex((slot: GridSlot) => nowTime >= slot.start && nowTime < slot.end);
+            
+            if (index === -1) {
+              const nextSlotIndex = responseData.grid.findIndex((slot: GridSlot) => slot.start > nowTime);
+              index = nextSlotIndex !== -1 ? nextSlotIndex : 0;
+            }
+            setCurrentSlotIndex(index);
+          }
       }
 
     } catch (err: any) {
@@ -115,11 +137,11 @@ function App() {
   };
 
   // Derived state for the currently displayed slot
-  const currentSlot = data?.grid[currentSlotIndex];
+  const currentSlot = data?.grid?.[currentSlotIndex];
   
   // Determine if nav buttons should be disabled
   const isPrevDisabled = currentSlotIndex <= 0;
-  const isNextDisabled = !data || currentSlotIndex >= data.grid.length - 1;
+  const isNextDisabled = !data || !data.grid || currentSlotIndex >= data.grid.length - 1;
 
   if (loading && !data) {
     return <LoadingScreen />;
@@ -129,8 +151,8 @@ function App() {
     return <ErrorScreen error={error} onRetry={fetchData} />;
   }
 
-  if (isAfterHours) {
-    return <AfterHoursScreen hours={operationHours} />;
+  if (isAfterHours && data) {
+    return <AfterHoursScreen operationHours={data.operation_hours} saturdayHours={data.saturday_hours} />;
   }
 
   return (
@@ -210,18 +232,14 @@ function App() {
       {/* Floating Help Button & Modal */}
       <HelpWidget />
       
-      {/* Footer Info Link - Hidden in Live/TV Mode */}
-      <div className="w-full flex justify-center py-6 pb-24 lg:hidden z-10">
-         <a 
-           href={import.meta.env.VITE_INSTAGRAM_URL}
-           target="_blank"
-           rel="noreferrer"
-           className="pointer-events-auto flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full shadow-sm border border-slate-200 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-all hover:scale-105 active:scale-95"
-         >
-           <Instagram className="w-3.5 h-3.5" />
-           <span>Find latest operational info on Instagram</span>
-         </a>
-       </div>
+      {/* Operational Info Widget */}
+      {data && (
+        <OperationalInfoWidget 
+          operationHours={data.operation_hours} 
+          saturdayHours={data.saturday_hours} 
+        />
+      )}
+
     </div>
   );
 }

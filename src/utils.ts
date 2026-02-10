@@ -22,33 +22,3 @@ export const getTrafficLight = (available: number, total: number) => {
 export const calculateTotalAvailable = (counts: DurationCounts) => {
   return Object.values(counts).reduce((sum, count) => sum + count, 0);
 };
-
-// Open Instagram profile: prefer app deep-link on mobile, fallback to web
-export const openInstagram = (username: string) => {
-  if (!username) return;
-  const iosUrl = `instagram://user?username=${username}`;
-  const androidIntent = `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`;
-  const webUrl = `https://instagram.com/${username}`;
-
-  const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-
-  try {
-    if (/android/i.test(ua)) {
-      window.location.href = androidIntent;
-      setTimeout(() => { window.location.href = webUrl; }, 1200);
-      return;
-    }
-
-    if (/iPad|iPhone|iPod/.test(ua) && !('MSStream' in window)) {
-      window.location.href = iosUrl;
-      setTimeout(() => { window.location.href = webUrl; }, 1200);
-      return;
-    }
-
-    // Desktop / unknown: open web in new tab
-    window.open(webUrl, '_blank', 'noopener,noreferrer');
-  } catch (err) {
-    // Fallback to web
-    try { window.open(webUrl, '_blank', 'noopener,noreferrer'); } catch {}
-  }
-};

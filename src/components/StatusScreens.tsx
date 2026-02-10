@@ -42,6 +42,13 @@ export function AfterHoursScreen({ operationHours, saturdayHours }: AfterHoursSc
     const opEnd = operationHours?.end || '18:00';
     const numSaturdayHours = saturdayHours || { start: '08:00', end: '12:00', enabled: false };
 
+    const envInstaUrl = import.meta.env.VITE_INSTAGRAM_URL ?? '';
+    const envInstaUser = import.meta.env.VITE_INSTAGRAM_USERNAME ?? '';
+    const parsedFromUrl = envInstaUrl ? envInstaUrl.replace(/\/+$/, '').split('/').pop() || '' : '';
+    const instaUsername = envInstaUser || parsedFromUrl;
+    const instaUrl = envInstaUrl || (instaUsername ? `https://instagram.com/${instaUsername}` : '');
+    const instaDisplay = instaUsername ? ` (@${instaUsername})` : '';
+
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="bg-white max-w-md w-full rounded-3xl p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100">
@@ -73,13 +80,13 @@ export function AfterHoursScreen({ operationHours, saturdayHours }: AfterHoursSc
                 </div>
 
                 <a 
-                    href={import.meta.env.VITE_INSTAGRAM_URL}
+                    href={instaUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 mt-8 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-full text-sm font-medium transition-all group"
                 >
                     <Instagram className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span>Find latest operational info on Instagram</span>
+                    <span>Find latest operational info on Instagram{instaDisplay}</span>
                 </a>
             </div>
         </div>

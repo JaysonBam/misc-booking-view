@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, X, Clock, Instagram } from 'lucide-react';
-import { openInstagram } from '../utils';
 import { STYLES } from '../styles';
 import type { OperationHours, SaturdayHours } from '../types';
 
@@ -90,8 +89,7 @@ export function OperationalInfoWidget({ operationHours, saturdayHours }: Operati
                                 </div>
 
                                 <a 
-                                    href={`https://instagram.com/${import.meta.env.VITE_INSTAGRAM_USERNAME || ''}`}
-                                    onClick={(e) => { e.preventDefault(); openInstagram(import.meta.env.VITE_INSTAGRAM_USERNAME || ''); }}
+                                    href={import.meta.env.VITE_INSTAGRAM_URL}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-full text-sm font-medium transition-all group w-full justify-center border border-slate-100"

@@ -1,5 +1,6 @@
 import { STYLES } from '../styles';
 import { Loader2, AlertCircle, Clock, Instagram } from 'lucide-react';
+import { openInstagram } from '../utils';
 
 export function LoadingScreen() {
     return (
@@ -73,7 +74,8 @@ export function AfterHoursScreen({ operationHours, saturdayHours }: AfterHoursSc
                 </div>
 
                 <a 
-                    href={import.meta.env.VITE_INSTAGRAM_URL}
+                    href={`https://instagram.com/${import.meta.env.VITE_INSTAGRAM_USERNAME || ''}`}
+                    onClick={(e) => { e.preventDefault(); openInstagram(import.meta.env.VITE_INSTAGRAM_USERNAME || ''); }}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 mt-8 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 rounded-full text-sm font-medium transition-all group"
